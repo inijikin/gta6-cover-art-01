@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vice Cover Studio — GTA-style cover art maker</title>
+<meta name="description" content="Turn your photos and a caption into a multi-panel GTA-style poster cover, offline, exported as a PNG.">
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">VC</span>
+    <div>
+      <h1>Vice Cover Studio</h1>
+      <p>Photos + caption, posterised. Nothing leaves your machine.</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <button id="undo" type="button" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="redo" type="button" title="Redo (Ctrl+Y)">Redo</button>
+    <button id="reset" type="button" title="Start over from the fresh cover">Reset</button>
+    <button id="export-main" type="button" class="primary" title="Export PNG at the preview size (Ctrl+E)">Export PNG</button>
+  </div>
+</header>
+
+<main class="workspace">
+  <aside class="side left" aria-label="Photos, layouts and looks">
+    <section class="card" id="dropzone">
+      <h2>1 · Photos</h2>
+      <p class="hint">Drop 1–8 photos here, or pick files. They are read on your machine and never uploaded.</p>
+      <label class="file-button">Choose photos
+        <input id="photo-input" type="file" accept="image/*" multiple>
+      </label>
+      <div id="photo-tray" class="photo-tray"></div>
+      <p class="hint">Or start with a sample:</p>
+      <div id="sample-buttons" class="sample-buttons"></div>
+    </section>
+
+    <section class="card">
+      <h2>2 · Layout</h2>
+      <p class="hint">Click a panel in the preview to select it, then drag to move its photo.</p>
+      <div id="layout-picker" class="layout-picker"></div>
+    </section>
+
+    <section class="card">
+      <h2>3 · Look</h2>
+      <p class="hint">One click sets the grade, lettering and effects together.</p>
+      <div id="look-picker" class="look-picker"></div>
+    </section>
+  </aside>
+
+  <section class="stage" aria-label="Cover preview">
+    <div class="canvas-wrap">
+      <canvas id="cover" width="1920" height="1080" aria-label="The cover preview"></canvas>
+      <div id="empty-state" class="empty-state">
+        <p class="empty-title">Your poster starts here</p>
+        <p>Drop photos onto this canvas, or try a sample on the left.<br>Three samples, six layouts, one export — that is the whole trip.</p>
+      </div>
+    </div>
+    <div class="stage-bar">
+      <div class="size-switch" role="group" aria-label="Preview size">
+        <button type="button" data-size="1080x1080" title="Square (1)">1080 × 1080</button>
+        <button type="button" data-size="1080x1350" title="Portrait (2)">1080 × 1350</button>
+        <button type="button" data-size="1920x1080" title="Landscape (3)">1920 × 1080</button>
+      </div>
+      <p id="status" role="status">Ready.</p>
+    </div>
+  </section>
+
+  <aside class="side right" aria-label="Panel, caption and effect controls">
+    <section class="card">
+      <h2 id="panel-title">Panel 1</h2>
+      <label>Photo in this panel
+        <select id="panel-photo"></select>
+      </label>
+      <label>Zoom <span id="panel-zoom-value" class="value">100%</span>
+        <input id="panel-zoom" type="range" min="0.5" max="4" step="0.01" value="1">
+      </label>
+      <label>Fill
+        <select id="panel-fit">
+          <option value="fill">Fill the panel (crop)</option>
+          <option value="fit">Fit inside the panel</option>
+        </select>
+      </label>
+      <label>Grade
+        <select id="panel-grade"></select>
+      </label>
+      <label>Grade strength <span id="panel-intensity-value" class="value">85%</span>
+        <input id="panel-intensity" type="range" min="0" max="1" step="0.01" value="0.85">
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Caption</h2>
+      <label>Title
+        <input id="caption-text" type="text" maxlength="32" value="SUNSET HEIST">
+      </label>
+      <label>Sub-caption (script)
+        <input id="caption-sub" type="text" maxlength="48" value="welcome to the coast">
+      </label>
+      <label>Title size <span id="caption-size-value" class="value">100%</span>
+        <input id="caption-size" type="range" min="0.6" max="1.5" step="0.01" value="1">
+      </label>
+      <label>Letter spacing
+        <input id="caption-spacing" type="range" min="0" max="0.2" step="0.005" value="0.06">
+      </label>
+      <label>Letter gradient
+        <select id="caption-gradient"></select>
+      </label>
+      <div class="check-row">
+        <label class="check"><input id="caption-outline" type="checkbox" checked> Dark outline</label>
+        <label class="check"><input id="caption-shadow" type="checkbox" checked> Drop shadow</label>
+      </div>
+      <div class="segmented" role="group" aria-label="Caption position">
+        <button type="button" data-position="top">Top</button>
+        <button type="button" data-position="middle">Middle</button>
+        <button type="button" data-position="bottom">Bottom</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Badge &amp; effects</h2>
+      <label>Location badge
+        <input id="badge-text" type="text" maxlength="20" value="VICE CITY">
+      </label>
+      <label class="check"><input id="badge-show" type="checkbox" checked> Show badge</label>
+      <label>Film grain <span id="effect-grain-value" class="value">28%</span>
+        <input id="effect-grain" type="range" min="0" max="1" step="0.01" value="0.28">
+      </label>
+      <label class="check"><input id="effect-halftone" type="checkbox"> Halftone title block</label>
+      <label>Vignette <span id="effect-vignette-value" class="value">38%</span>
+        <input id="effect-vignette" type="range" min="0" max="1" step="0.01" value="0.38">
+      </label>
+    </section>
+
+    <section class="card export-card">
+      <h2>Export</h2>
+      <p class="hint">One click, one PNG, named for its size.</p>
+      <button type="button" data-export="1080x1080">PNG 1080 × 1080</button>
+      <button type="button" data-export="1080x1350">PNG 1080 × 1350</button>
+      <button type="button" data-export="1920x1080">PNG 1920 × 1080</button>
+    </section>
+  </aside>
+</main>
+
+<div id="toast" class="toast" role="alert"></div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
